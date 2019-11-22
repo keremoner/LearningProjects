@@ -15,7 +15,7 @@ class DQNAgent:
         # Hyperparameters
         self.memory = deque(maxlen=10000)
         self.discount = 0.99
-        self.epsilon = 1.0 # it is not a hyperparameter
+        self.epsilon = 1.0  # it is not a hyperparameter
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.92
         self.learning_rate = 0.001
@@ -23,10 +23,10 @@ class DQNAgent:
 
         # Creating neural network for action-value approximation
         self.model = self.create_model()
-        
-        #Trained model
-        #self.model.load_weights('trainNetworkInEPS218.h5')
-        
+
+        # Trained model
+        # self.model.load_weights('trainNetworkInEPS218.h5')
+
         # Two models are created to stabilize learning
         self.target_model = self.create_model()
         self.target_model.set_weights(self.model.get_weights())
@@ -49,7 +49,7 @@ class DQNAgent:
         if np.random.rand(1) < self.epsilon:
             action = np.random.randint(0, self.env.action_space.n)
         else:
-        	action = np.argmax(self.model.predict(state)[0])
+            action = np.argmax(self.model.predict(state)[0])
         # Acting greedily
         # Returns the index of maximum action-value
         return action
@@ -95,6 +95,7 @@ class DQNAgent:
             i += 1
 
         self.model.fit(states, targets, epochs=1, verbose=0)
+
     # We will synchronize target model and actual model in every k episode
     def target_train(self):
 
@@ -121,14 +122,13 @@ def main():
             action = dqn_agent.act(cur_state)
             new_state, reward, done, info = env.step(action)
 
-            if trial%20 == 0:
+            if trial % 20 == 0:
                 env.render()
 
             new_state = new_state.reshape(1, env.observation_space.shape[0])
             if new_state[0][0] >= 0.5:
                 reward += 10
-                reward += (200-step)*(0.6)
-
+                reward += (200 - step) * (0.6)
 
             dqn_agent.remember(cur_state, action, reward, new_state, done)
             dqn_agent.replay()
@@ -141,10 +141,10 @@ def main():
             print("Episode: " + str(trial) + " failed.")
         else:
             print("Epside: " + str(trial) + " completed." + str(step))
-            if step< bestMan:
-            	print("New best score!!")
-            	bestMan = step
-            	dqn_agent.model.save('./trainNetworkInEPS{}.h5'.format(trial))
+            if step < bestMan:
+                print("New best score!!")
+                bestMan = step
+                dqn_agent.model.save('./trainNetworkInEPS{}.h5'.format(trial))
 
         dqn_agent.target_train()
         dqn_agent.epsilon *= dqn_agent.epsilon_decay
@@ -152,4 +152,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
