@@ -15,7 +15,7 @@
   <component name="ProjectId" id="1TyUrzVqyzgZmwKZBdtGCTliSdP" />
   <component name="PropertiesComponent">
     <property name="last_opened_file_path" value="C:/Program Files/Git/cmd/git.exe" />
-    <property name="settings.editor.selected.configurable" value="vcs.Git" />
+    <property name="settings.editor.selected.configurable" value="project.propVCSSupport.ChangelistConflict" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -58,7 +58,7 @@
     </recent_temporary>
   </component>
   <component name="SvnConfiguration">
-    <configuration />
+    <configuration>C:\Users\Kerem\AppData\Roaming\Subversion</configuration>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
