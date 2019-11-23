@@ -1,4 +1,4 @@
-import gym
+from tictactoe import game
 import numpy as np
 import random
 from keras.models import Sequential
@@ -13,14 +13,13 @@ class DQNAgent:
 
     def __init__(self, env):
         self.env = env
-        self.state_shape = self.env.observation_space.shape
         # Hyperparameters
         self.memory = deque(maxlen=10000)
         self.discount = 0.99
         self.epsilon = 1.0  # it is not a hyperparameter
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.92
-        self.learning_rate = 0.001
+        self.epsilon_decay = 0.999539589
+        self.learning_rate = 0.002
         self.tau = .125
 
         # Creating neural network for action-value approximation
@@ -36,9 +35,9 @@ class DQNAgent:
     def create_model(self):
         # Creating network with 2 hidden layers
         model = Sequential()
-        model.add(Dense(24, input_shape=self.state_shape, activation="relu"))
+        model.add(Dense(24, input_shape=[9], activation="relu"))
         model.add(Dense(48, activation="relu"))
-        model.add(Dense(self.env.action_space.n, activation="linear"))
+        model.add(Dense(9, activation="linear"))
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         return model
 
@@ -46,10 +45,10 @@ class DQNAgent:
     def act(self, state):
         # Chance of acting greedily will increase every time we act
         action = 0
-        self.epsilon = max(self.epsilon_min, self.epsilon)
+        #self.epsilon = max(self.epsilon_min, self.epsilon)
         # Acting reandom
         if np.random.rand(1) < self.epsilon:
-            action = np.random.randint(0, self.env.action_space.n)
+            action = np.random.randint(0, 9)
         else:
             action = np.argmax(self.model.predict(state)[0])
         # Acting greedily
@@ -77,10 +76,10 @@ class DQNAgent:
             new_states.append(new_state)
 
         newArray = np.array(states)
-        states = newArray.reshape(batch_size, self.state_shape[0])
+        states = newArray.reshape(batch_size, 9)
 
         newArray2 = np.array(new_states)
-        new_states = newArray2.reshape(batch_size, self.state_shape[0])
+        new_states = newArray2.reshape(batch_size, 9)
 
         targets = self.model.predict(states)
         new_state_targets = self.target_model.predict(new_states)
@@ -110,9 +109,9 @@ class DQNAgent:
 
 def main():
     print("It started")
-    env = gym.make("MountainCar-v0")
-    trials = 400
-    trial_len = 500
+    env = game()
+    trials = 10000
+    trial_len = 20
     dqn_agent = DQNAgent(env=env)
 
     bestMan = 200
@@ -123,27 +122,41 @@ def main():
     tstart = time.time()
     for trial in range(trials):
 
-        cur_state = env.reset().reshape(1, env.observation_space.shape[0])
-
-        for step in range(trial_len):
+        cur_state = env.reset().reshape(1, env.obsSpace)
+        step = 0
+        while True:
+            step+=1
             action = dqn_agent.act(cur_state)
-            new_state, reward, done, info = env.step(action)
+            new_state, reward, done = env.step(action)
+            new_state = new_state.reshape(1, env.obsSpace)
             totalStep+=1
-            """
-            if trial % 20 == 0:
-                env.render()
-            """
-            new_state = new_state.reshape(1, env.observation_space.shape[0])
-            if new_state[0][0] >= 0.5:
-                reward += 10
-                reward += (200 - step) * (0.6)
 
-            dqn_agent.remember(cur_state, action, reward, new_state, done)
-            dqn_agent.replay()
+            if trial % 500 == 0:
+                env.render()
+
+            if (not done[1]) and done[0]:
+                reward += 10
+            if done[0]:
+                dqn_agent.remember(cur_state, action, reward, new_state, done)
+                dqn_agent.replay()
+                break
+
+            else:
+                possible = []
+                for i in range(9):
+                    if env.table[i] ==0:
+                        possible.append(i)
+                new_state, rreward, done = env.step(possible[np.random.randint(0,len(possible))])
+
+            if done[0]:
+                break
+            else:
+                new_state = new_state.reshape(1, env.obsSpace)
+                dqn_agent.remember(cur_state, action, reward, new_state, done)
+                dqn_agent.replay()
 
             cur_state = new_state
-            if done:
-                break
+
         """
         if step >= 199:
             print("Episode: " + str(trial) + " failed.")
@@ -153,19 +166,45 @@ def main():
                 print("New best score!!")
                 bestMan = step
                 dqn_agent.model.save('./MountainCarModels/mountainDDQN.h5')
-        """
         print(str(trial))
         tend = time.time()
         timeAxis.append((tend-tstart)/60)
         avgAxis.append(totalStep/(trial+1))
         stepAxis.append(step)
+        """
+
+        if trial==9999:
+            dqn_agent.model.save('./ttt10k.h5')
         dqn_agent.target_train()
         dqn_agent.epsilon *= dqn_agent.epsilon_decay
-
-
+        print(str(trial))
+    """
     plt.plot(timeAxis,stepAxis)
     plt.plot(timeAxis,avgAxis)
     plt.savefig("mountainDDQNsmallnetwork.png")
-
+    """
+    dqn_agent.model.save('./ttt50k.h5')
 if __name__ == "__main__":
     main()
+    """
+    env = game()
+    trials = 1000
+    trial_len = 20
+    dqn_agent = DQNAgent(env=env)
+    dqn_agent.model.load_weights('./ttt25k.h5')
+    dqn_agent.epsilon = 0
+    state = env.reset().reshape(1,env.obsSpace)
+    env.render()
+    while True:
+        action = dqn_agent.act(state)
+        newstate, reward, done = env.step(action)
+        env.render()
+        action = int(input())
+        newstate, reward, done = env.step(action)
+        env.render()
+
+        if done[0]:
+            state = env.reset().reshape(1,env.obsSpace)
+        else:
+            state = newstate.reshape(1,env.obsSpace)
+"""
