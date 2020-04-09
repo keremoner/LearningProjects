@@ -18,7 +18,7 @@ class DQNAgent:
         self.discount = 0.99
         self.epsilon = 1.0  # it is not a hyperparameter
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.999539589
+        self.epsilon_decay = 0.99995
         self.learning_rate = 0.002
         self.tau = .125
 
@@ -45,12 +45,24 @@ class DQNAgent:
     def act(self, state):
         # Chance of acting greedily will increase every time we act
         action = 0
+        valid = []
+        for i in range(len(state[0])):
+            if state[0][i] == 0:
+                valid.append(i)
         #self.epsilon = max(self.epsilon_min, self.epsilon)
         # Acting reandom
         if np.random.rand(1) < self.epsilon:
-            action = np.random.randint(0, 9)
+            action = valid[np.random.randint(0, len(valid))]
         else:
-            action = np.argmax(self.model.predict(state)[0])
+            predictions = self.model.predict(state)[0]
+            maxact = valid[0]
+            maxactval = predictions[maxact]
+            for i in range(len(valid)):
+                if predictions[valid[i]] > maxactval:
+                    maxact = valid[i]
+                    maxactval = predictions[maxact]
+
+            action = maxact
         # Acting greedily
         # Returns the index of maximum action-value
         return action
@@ -88,7 +100,7 @@ class DQNAgent:
         for sample in samples:
             state, action, reward, new_state, done = sample
             target = targets[i]
-            if done:
+            if done[0]:
                 target[action] = reward
             else:
                 Q_future = max(new_state_targets[i])
@@ -110,14 +122,14 @@ class DQNAgent:
 def main():
     print("It started")
     env = game()
-    trials = 10000
+    trials = 100000
     trial_len = 20
     dqn_agent = DQNAgent(env=env)
-
     bestMan = 200
     timeAxis = []
     stepAxis = []
     avgAxis = []
+    totalwin = 0
     totalStep = 0
     tstart = time.time()
     for trial in range(trials):
@@ -131,31 +143,50 @@ def main():
             new_state = new_state.reshape(1, env.obsSpace)
             totalStep+=1
 
-            if trial % 500 == 0:
+            if trial % 100 == 0:
                 env.render()
 
-            if (not done[1]) and done[0]:
-                reward += 10
-            if done[0]:
+            if not done[2]:
                 dqn_agent.remember(cur_state, action, reward, new_state, done)
                 dqn_agent.replay()
-                break
+                cur_state = new_state
 
             else:
-                possible = []
-                for i in range(9):
-                    if env.table[i] ==0:
-                        possible.append(i)
-                new_state, rreward, done = env.step(possible[np.random.randint(0,len(possible))])
+                if done[0] and not done[1] and env.turn == -1:
+                    reward += 100
+                    totalwin += 1
+                    dqn_agent.remember(cur_state, action, reward, new_state, done)
+                    dqn_agent.replay()
+                    break
+                elif done[0] and done[1]:
+                    reward += 10
+                    dqn_agent.remember(cur_state, action, reward, new_state, done)
+                    dqn_agent.replay()
+                    break
+                elif not done[0]:
+                    possible = []
+                    for i in range(9):
+                        if env.table[i] == 0:
+                            possible.append(i)
+                    new_state, rreward, done = env.step(possible[np.random.randint(0, len(possible))])
+                    new_state = new_state.reshape(1, env.obsSpace)
+                    if trial % 100 == 0:
+                        env.render()
+                    if done[0] and done[1]:
+                        reward += 10
+                        dqn_agent.remember(cur_state, action, reward, new_state, done)
+                        dqn_agent.replay()
+                        break
+                    elif done[0] and not done[1]:
 
-            if done[0]:
-                break
-            else:
-                new_state = new_state.reshape(1, env.obsSpace)
-                dqn_agent.remember(cur_state, action, reward, new_state, done)
-                dqn_agent.replay()
+                        dqn_agent.remember(cur_state, action, reward, new_state, done)
+                        dqn_agent.replay()
+                        break
+                    elif not done[0]:
+                        dqn_agent.remember(cur_state, action, reward, new_state, done)
+                        dqn_agent.replay()
+                        cur_state = new_state
 
-            cur_state = new_state
 
         """
         if step >= 199:
@@ -173,11 +204,11 @@ def main():
         stepAxis.append(step)
         """
 
-        if trial==9999:
-            dqn_agent.model.save('./ttt10k.h5')
+        if trial% 1000 == 0:
+            dqn_agent.model.save('./ttt' + str(int(trial/1000)) + 'k.h5')
         dqn_agent.target_train()
         dqn_agent.epsilon *= dqn_agent.epsilon_decay
-        print(str(trial))
+        print("Trial: " + str(trial) + " WR: " + str(totalwin/(trial+1)) + "\n")
     """
     plt.plot(timeAxis,stepAxis)
     plt.plot(timeAxis,avgAxis)
@@ -185,13 +216,13 @@ def main():
     """
     dqn_agent.model.save('./ttt50k.h5')
 if __name__ == "__main__":
-    main()
-    """
+    #main()
+
     env = game()
     trials = 1000
     trial_len = 20
     dqn_agent = DQNAgent(env=env)
-    dqn_agent.model.load_weights('./ttt25k.h5')
+    dqn_agent.model.load_weights('./ttt99k.h5')
     dqn_agent.epsilon = 0
     state = env.reset().reshape(1,env.obsSpace)
     env.render()
@@ -207,4 +238,3 @@ if __name__ == "__main__":
             state = env.reset().reshape(1,env.obsSpace)
         else:
             state = newstate.reshape(1,env.obsSpace)
-"""

@@ -28,7 +28,7 @@ class TDAgent:
     def act(self, state):
         # Chance of acting greedily will increase every time we act
         #self.epsilon = max(self.epsilon_min, self.epsilon)
-        # Acting reandom
+        # Acting random
         if np.random.rand(1) < self.epsilon:
             action = np.random.randint(0, self.env.action_space.n)
         else:
@@ -74,10 +74,10 @@ def main():
             new_state = tdagent.stateMap(new_state)
             action = tdagent.train(state,action,reward,new_state,done)
             state = new_state
-            """
+
             if trial%1000==0:
                 env.render()
-            """
+
             if done:
                 break
 

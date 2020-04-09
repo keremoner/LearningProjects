@@ -20,21 +20,20 @@ class game:
 
     def step(self, action):
         self.totalTime+=1
+        reward = 0
         if(self.table[action]!=0):
-            reward = -1
             done = [False,False,False]
             return self.table, reward, done
         else:
             self.table[action] = self.turn
             self.time += 1
             done = self.isFinish()
-            reward = 0
             self.turn *= -1
-            if done[0] and done[0]:
+            if done[0] and not done[1]:
                 print("Bitti Yenen: " + str(-self.turn))
                 print("Totaltime: " + str(self.totalTime))
 
-            elif done[0] and (not done[1]):
+            elif done[0] and done[1]:
                 print("Bitti Berabere")
                 print("Totaltime: " + str(self.totalTime))
             return self.table, reward, done
@@ -57,15 +56,12 @@ class game:
         return [False,False,True]
 
 if __name__ == "__main__":
-    game = env()
-    state = game.reset()
-    print(state)
+    oyun = game()
+    state = oyun.reset()
+    oyun.render()
     while True:
 
         action = int(input())
-        newstate, reward, done = game.step(action)
-        print(newstate)
-        if done:
-            state = game.reset()
-        else:
-            state = newstate
+        newstate, reward, done = oyun.step(action)
+        oyun.render()
+        state = newstate
